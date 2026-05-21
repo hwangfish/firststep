@@ -3,130 +3,707 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>프로 QR 코드 생성기</title>
+    <title>QR 코드 생성기</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- qr-code-styling 라이브러리 (로고 및 다양한 스타일 지원) -->
     <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <!-- html2canvas (테마 프레임 캡처용) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts (Inter, Jua) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jua&display=swap" rel="stylesheet">
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        input[type="color"] { -webkit-appearance: none; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; box-shadow: 0 0 0 2px white, 0 0 0 3px #e5e7eb; }
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #4f46e5; cursor: pointer; margin-top: -6px; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #e5e7eb; border-radius: 2px; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
         
-        #export-area { display: inline-block; transition: all 0.3s ease; }
+        /* Color picker 커스텀 디자인 */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 0;
+            overflow: hidden;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px white, 0 0 0 3px #e5e7eb;
+        }
+        /* Range 슬라이더 커스텀 */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #4f46e5;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+
+        #export-area {
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        /* 1. 기본 (테마 없음) */
         .theme-none { padding: 1rem; background: white; border-radius: 1rem; }
-        .theme-note { padding: 2.5rem 2rem 2rem 3rem; background-color: #fdfbf7; border-radius: 8px; border-left: 20px solid #d1d5db; background-image: repeating-linear-gradient(transparent, transparent 29px, #e5e7eb 30px); }
-        .theme-board { padding: 2.5rem 2rem 2rem 2rem; background-color: #1e4a38; border: 12px solid #8b5a2b; border-radius: 4px; }
-        .theme-cherry { padding: 3rem 2rem 2rem 2rem; background: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%); border-radius: 24px; border: 2px dashed #ffb6c1; }
-        .theme-grid { padding: 2rem; background-color: #fff; background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px); background-size: 20px 20px; border: 2px solid #9ca3af; border-radius: 8px; }
-        .theme-teen { padding: 2rem; background-color: #fff; background-image: repeating-linear-gradient(45deg, #a78bfa 25%, transparent 25%, transparent 75%, #a78bfa 75%, #a78bfa), repeating-linear-gradient(45deg, #a78bfa 25%, #fff 25%, #fff 75%, #a78bfa 75%, #a78bfa); background-position: 0 0, 15px 15px; background-size: 30px 30px; border-radius: 16px; }
         
-        .theme-selector input[type="radio"]:checked + div { border-color: #4f46e5; background-color: #e0e7ff; color: #4f46e5; }
+        /* 2. 공책 (스프링 노트 느낌) */
+        .theme-note {
+            padding: 2.5rem 2rem 2rem 3rem;
+            background-color: #fdfbf7;
+            border-radius: 8px;
+            border-left: 20px solid #d1d5db;
+            background-image: repeating-linear-gradient(transparent, transparent 29px, #e5e7eb 30px);
+            box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .theme-note::before {
+            content: 'MY NOTE';
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-family: 'Jua', sans-serif;
+            color: #ef4444;
+            font-size: 1.2rem;
+            transform: rotate(-5deg);
+        }
+
+        /* 3. 칠판 (학교 칠판) */
+        .theme-board {
+            padding: 2.5rem 2rem 2rem 2rem;
+            background-color: #1e4a38;
+            border: 12px solid #8b5a2b;
+            border-radius: 4px;
+            position: relative;
+        }
+        .theme-board #qrcode canvas {
+            border: 4px solid white;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+        .theme-board::after {
+            content: 'Notice';
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Jua', sans-serif;
+            color: rgba(255,255,255,0.9);
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        /* 4. 벚꽃 (봄, 감성) */
+        .theme-cherry {
+            padding: 3rem 2rem 2rem 2rem;
+            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
+            border-radius: 24px;
+            border: 2px dashed #ffb6c1;
+            position: relative;
+        }
+        .theme-cherry::before {
+            content: '🌸';
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 2rem;
+        }
+        .theme-cherry::after {
+            content: '🌸';
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 2rem;
+        }
+
+        /* 5. 모눈종이 (수학/이과 감성) */
+        .theme-grid {
+            padding: 2rem;
+            background-color: #fff;
+            background-image: 
+                linear-gradient(#e5e7eb 1px, transparent 1px),
+                linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid #9ca3af;
+            border-radius: 8px;
+        }
+
+        /* 6. 하이틴 (체커보드) */
+        .theme-teen {
+            padding: 2rem;
+            background-color: #fff;
+            background-image: 
+                repeating-linear-gradient(45deg, #a78bfa 25%, transparent 25%, transparent 75%, #a78bfa 75%, #a78bfa),
+                repeating-linear-gradient(45deg, #a78bfa 25%, #fff 25%, #fff 75%, #a78bfa 75%, #a78bfa);
+            background-position: 0 0, 15px 15px;
+            background-size: 30px 30px;
+            border-radius: 16px;
+        }
+        .theme-teen #qrcode canvas {
+            border: 4px solid #111827;
+            border-radius: 12px;
+            background: white;
+            padding: 8px;
+        }
+        
+        /* 테마 선택기 라디오 버튼 디자인 */
+        .theme-selector input[type="radio"]:checked + div {
+            border-color: #4f46e5;
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
     </style>
 </head>
+
 <body class="min-h-screen text-gray-800 flex flex-col items-center justify-center p-4">
     <div class="max-w-5xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
         
+        <!-- 왼쪽 패널: 설정 (입력 폼) -->
         <div class="w-full md:w-1/2 p-6 md:p-8 border-b md:border-b-0 md:border-r border-gray-100 flex flex-col gap-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     <i class="ph-fill ph-qr-code text-indigo-600"></i>
-                    QR 생성기
+                    QR 코드 생성기
                 </h1>
-                <p class="text-sm text-gray-500 mt-1">간편하게 디자인 QR을 생성해보세요.</p>
+                <p class="text-sm text-gray-500 mt-1">실시간으로 디자인을 확인하며 예쁜 QR 코드를 만드세요.</p>
             </div>
 
             <div class="flex flex-col gap-4 flex-grow">
+                <!-- 콘텐츠 입력 -->
                 <div>
-                    <label for="qr-content" class="block text-sm font-medium text-gray-700 mb-1">내용 (URL/텍스트)</label>
-                    <textarea id="qr-content" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all" placeholder="입력하세요..."></textarea>
+                    <label for="qr-content" class="block text-sm font-medium text-gray-700 mb-1">내용 (URL 또는 텍스트)</label>
+                    <textarea id="qr-content" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all" placeholder="여기에 링크나 텍스트를 입력하세요."></textarea>
                     
-                    <div class="flex justify-between items-start mt-2 gap-2">
-                        <span class="text-xs text-gray-500 flex-1 leading-relaxed">
-                            연락처/와이파이 정보를 적고 변환을 누르면 최적화됩니다.
-                        </span>
-                        <button id="ai-format-btn" class="flex-shrink-0 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded-md shadow-sm transition-all flex items-center gap-1.5">
-                            <i class="ph-fill ph-check-square"></i> 스마트 최적화
-                        </button>
+                    <div class="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                        <i class="ph-fill ph-info text-blue-500"></i>
+                        URL 주소, 와이파이 정보, 연락처 등 원하는 내용을 자유롭게 입력하세요.
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-5 flex-grow overflow-y-auto max-h-[50vh] md:max-h-[60vh]">
+                <!-- 디자인 및 고급 설정 그룹 -->
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-5 flex-grow overflow-y-auto max-h-[50vh] md:max-h-[60vh] custom-scrollbar">
+                    
+                    <!-- 테마 선택 -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                            <i class="ph-fill ph-frame-corners text-indigo-500"></i> 배경 테마
+                            <i class="ph-fill ph-frame-corners text-pink-500"></i> 배경 테마 선택
                         </label>
                         <div class="grid grid-cols-3 gap-2 theme-selector">
-                            <label class="cursor-pointer text-center"><input type="radio" name="qr-theme" value="theme-none" class="hidden" checked><div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg font-medium text-gray-600">기본</div></label>
-                            <label class="cursor-pointer text-center"><input type="radio" name="qr-theme" value="theme-note" class="hidden"><div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg font-medium text-gray-600">노트 📓</div></label>
-                            <label class="cursor-pointer text-center"><input type="radio" name="qr-theme" value="theme-board" class="hidden"><div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg font-medium text-gray-600">칠판 👩‍🏫</div></label>
-                            <label class="cursor-pointer text-center"><input type="radio" name="qr-theme" value="theme-cherry" class="hidden"><div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg font-medium text-gray-600">벚꽃 🌸</div></label>
-                            <label class="cursor-pointer text-center"><input type="radio" name="qr-theme" value="theme-grid" class="hidden"><div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg font-medium text-gray-600">모눈 📐</div></label>
-                            <label class="cursor-pointer text-center"><input type="radio" name="qr-theme" value="theme-teen" class="hidden"><div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg font-medium text-gray-600">하이틴 💜</div></label>
-                        </div>
-                    </div>
-                    <hr class="border-gray-200">
-                    <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-1"><i class="ph ph-palette"></i> 디자인 설정</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="flex flex-col gap-1"><label class="text-xs text-gray-500 font-medium">QR 색상</label><input type="color" id="color-dark" value="#000000"></div>
-                        <div class="flex flex-col gap-1"><label class="text-xs text-gray-500 font-medium">배경 색상</label><input type="color" id="color-light" value="#ffffff"></div>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 font-medium mb-1">로고 이미지</label>
-                        <div class="flex items-center gap-2">
-                            <input type="file" id="logo-input" accept="image/*" class="hidden">
-                            <label for="logo-input" class="cursor-pointer flex-1 bg-white border border-gray-300 hover:border-indigo-500 text-gray-600 text-sm py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-2">
-                                <i class="ph ph-image"></i> <span id="logo-filename" class="truncate">파일 선택</span>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="qr-theme" value="theme-none" class="hidden" checked>
+                                <div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg transition-colors font-medium text-gray-600">기본</div>
                             </label>
-                            <button id="clear-logo-btn" class="hidden bg-red-50 text-red-500 p-2 rounded-md"><i class="ph ph-trash"></i></button>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="qr-theme" value="theme-note" class="hidden">
+                                <div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg transition-colors font-medium text-gray-600">공책 📓</div>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="qr-theme" value="theme-board" class="hidden">
+                                <div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg transition-colors font-medium text-gray-600">칠판 👩‍🏫</div>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="qr-theme" value="theme-cherry" class="hidden">
+                                <div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg transition-colors font-medium text-gray-600">벚꽃 🌸</div>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="qr-theme" value="theme-grid" class="hidden">
+                                <div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg transition-colors font-medium text-gray-600">모눈종이 📐</div>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="qr-theme" value="theme-teen" class="hidden">
+                                <div class="text-xs py-2 px-1 border-2 border-gray-200 rounded-lg transition-colors font-medium text-gray-600">하이틴 💜</div>
+                            </label>
                         </div>
-                        <div id="ai-bg-remove-area" class="hidden mt-2"><button id="ai-bg-remove-btn" class="w-full bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-medium py-1.5 px-3 rounded-md transition-colors text-sm"><i class="ph-fill ph-magic-wand"></i> 자동 배경 제거</button></div>
+                    </div>
+
+                    <hr class="border-gray-200">
+
+                    <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-1"><i class="ph ph-palette"></i> 상세 설정</h3>
+                    
+                    <!-- 색상 및 크기 -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1">
+                            <label for="color-dark" class="text-xs text-gray-500 font-medium">QR 색상</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="color-dark" value="#000000">
+                                <span class="text-xs text-gray-400" id="color-dark-val">#000000</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label for="color-light" class="text-xs text-gray-500 font-medium">배경 색상</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" id="color-light" value="#ffffff">
+                                <span class="text-xs text-gray-400" id="color-light-val">#ffffff</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="qr-size" class="block text-xs text-gray-500 font-medium">크기 조절</label>
+                            <span id="qr-size-val" class="text-xs text-indigo-600 font-semibold">256px</span>
+                        </div>
+                        <input type="range" id="qr-size" min="128" max="1024" step="8" value="256" class="w-full">
+                    </div>
+
+                    <!-- 로고 삽입 -->
+                    <div>
+                        <label class="block text-xs text-gray-500 font-medium mb-1">로고 이미지 삽입</label>
+                        <div class="flex items-center gap-2" id="logo-upload-btn-group">
+                            <input type="file" id="logo-input" accept="image/png, image/jpeg, image/svg+xml" class="hidden">
+                            <label for="logo-input" class="cursor-pointer flex-1 bg-white border border-gray-300 hover:border-indigo-500 text-gray-600 text-sm py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-2">
+                                <i class="ph ph-image"></i>
+                                <span id="logo-filename" class="truncate max-w-[120px]">이미지 선택 안됨</span>
+                            </label>
+                            <button id="clear-logo-btn" class="hidden flex-shrink-0 bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-md transition-colors" title="로고 지우기">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-1">정방형(1:1) 투명 배경 이미지 권장</p>
+                        
+                        <!-- 로고 크기 슬라이더 -->
+                        <div class="bg-white p-2 mt-2 rounded-lg border border-gray-100">
+                            <div class="flex justify-between items-center mb-1">
+                                <label for="logo-size" class="block text-xs text-gray-500 font-medium">로고 크기 비율</label>
+                                <span id="logo-size-val" class="text-xs text-indigo-600 font-semibold">40%</span>
+                            </div>
+                            <input type="range" id="logo-size" min="10" max="60" step="5" value="40" class="w-full">
+                        </div>
+                    </div>
+
+                    <!-- 도트, 모서리, 복원력 설정 -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="dot-style" class="block text-xs text-gray-500 font-medium mb-1">패턴 스타일</label>
+                            <select id="dot-style" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                <option value="square">기본 (사각형)</option>
+                                <option value="dots">도트 (원형)</option>
+                                <option value="rounded">둥글게</option>
+                                <option value="classy">클래식</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="corner-style" class="block text-xs text-gray-500 font-medium mb-1">모서리 테두리</label>
+                            <select id="corner-style" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                                <option value="square">기본 (사각형)</option>
+                                <option value="dot">원형</option>
+                                <option value="extra-rounded">둥글게</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="error-correction" class="block text-xs text-gray-500 font-medium mb-1">복원 능력 (오류 수정 레벨)</label>
+                        <select id="error-correction" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-white">
+                            <option value="L">낮음 (L - 7% 복원)</option>
+                            <option value="M">보통 (M - 15% 복원)</option>
+                            <option value="Q" selected>높음 (Q - 25% 복원, 로고 삽입 시 권장)</option>
+                            <option value="H">매우 높음 (H - 30% 복원)</option>
+                        </select>
                     </div>
                 </div>
             </div>
+
+            <!-- 수동 생성 버튼 -->
+            <button id="generate-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 mt-4 md:mt-0 shadow-md">
+                <i class="ph-bold ph-magic-wand"></i>
+                새로고침 / 생성
+            </button>
         </div>
 
-        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-100 flex flex-col items-center justify-center">
-            <div id="empty-state" class="text-gray-400 text-center"><i class="ph-light ph-qr-code text-6xl mb-4"></i><p>내용을 입력해주세요.</p></div>
-            <div id="result-container" class="w-full flex flex-col items-center opacity-0 transition-opacity duration-300">
-                <div id="export-area" class="theme-none" data-current-theme="theme-none"><div id="qrcode"></div></div>
-                <div class="flex flex-col gap-2 w-full max-w-xs mt-6">
-                    <button id="download-btn" class="w-full bg-indigo-600 text-white font-medium py-2 rounded-lg">이미지 저장</button>
-                    <button id="copy-btn" class="w-full bg-white border border-gray-300 font-medium py-2 rounded-lg">이미지 복사하기</button>
+        <!-- 오른쪽 패널: 결과 표시 (미리보기) -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-100 flex flex-col items-center justify-center relative min-h-[400px]">
+            
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-8 text-center transition-opacity duration-300">
+                <i class="ph-light ph-qr-code text-6xl mb-4"></i>
+                <p>왼쪽에 내용을 입력하면<br>여기에 실시간으로 나타납니다.</p>
+            </div>
+
+            <div id="result-container" class="w-full flex flex-col items-center opacity-0 pointer-events-none transition-opacity duration-300 gap-6 z-10">
+                
+                <!-- 테마가 적용되는 배경 프레임 영역 -->
+                <div class="w-full flex justify-center overflow-auto p-4 custom-scrollbar">
+                    <div id="export-area" class="theme-none" data-current-theme="theme-none">
+                        <div id="qrcode"></div>
+                    </div>
+                </div>
+
+                <!-- 액션 버튼 영역 -->
+                <div class="flex flex-col gap-2 w-full max-w-xs mt-2">
+                    <div class="flex gap-2 w-full">
+                        <select id="download-format" class="bg-white border border-gray-300 text-gray-700 text-sm py-2 px-3 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                            <option value="png">PNG</option>
+                            <option value="jpeg">JPEG</option>
+                            <option value="svg">SVG (기본테마전용)</option>
+                        </select>
+                        <button id="download-btn" class="flex-1 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 text-sm">
+                            <i class="ph-bold ph-download-simple"></i>
+                            이미지 저장
+                        </button>
+                    </div>
+                    <button id="copy-btn" class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 text-sm">
+                        <i class="ph-bold ph-copy"></i>
+                        클립보드에 이미지 복사
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div id="fallback-modal" class="hidden fixed inset-0 bg-black/50 items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
-        <div id="fallback-modal-content" class="bg-white p-6 rounded-2xl max-w-sm w-full text-center scale-95 transition-transform duration-300">
-            <h3 class="font-bold mb-2">이미지 복사하기</h3>
-            <p class="text-sm text-gray-500 mb-4">이미지를 마우스 우클릭하여 복사하세요.</p>
-            <img id="fallback-image" class="w-full mb-4 border rounded-lg">
-            <button id="close-modal-btn" class="w-full bg-gray-100 py-2 rounded-lg font-medium">닫기</button>
+
+    <!-- 복사 우회용 모달 팝업 -->
+    <div id="fallback-modal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+        <div id="fallback-modal-content" class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col items-center transform scale-95 transition-transform duration-300">
+            <h3 class="text-lg font-bold text-gray-900 mb-2">이미지 복사하기</h3>
+            <p class="text-sm text-gray-500 text-center mb-4">
+                브라우저 권한으로 인해 자동 복사가 차단되었습니다.<br>
+                아래 이미지를 <strong>우클릭(또는 길게 누르기)</strong>하여<br>
+                <span class="text-indigo-600 font-semibold">'이미지 복사'</span>를 선택해주세요.
+            </p>
+            <div class="border border-gray-200 rounded-lg p-2 bg-gray-50 w-full flex justify-center mb-4">
+                <img id="fallback-image" src="" alt="QR Code" class="max-w-full h-auto rounded">
+            </div>
+            <button id="close-modal-btn" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-4 rounded-lg transition-colors">
+                닫기
+            </button>
         </div>
     </div>
 
     <script>
-        // 코드 로직은 이전과 동일하되 명칭/안내 문구만 일반 서비스 느낌으로 수정됨
-        // (Gemini, AI 같은 표현 제거)
-        const contentInput = document.getElementById('qr-content');
-        const generateBtn = document.getElementById('ai-format-btn'); // 스마트 최적화 버튼
-        const downloadBtn = document.getElementById('download-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const exportArea = document.getElementById('export-area');
-        const themeRadios = document.querySelectorAll('input[name="qr-theme"]');
-        const logoInput = document.getElementById('logo-input');
-        const aiBgRemoveBtn = document.getElementById('ai-bg-remove-btn');
-        const aiBgRemoveArea = document.getElementById('ai-bg-remove-area');
-        
-        // ... 중략 (기능 구현은 기존과 동일) ...
-        // (전체 복사해서 사용하시면 됩니다.)
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements Setup
+            const contentInput = document.getElementById('qr-content');
+            const colorDarkInput = document.getElementById('color-dark');
+            const colorLightInput = document.getElementById('color-light');
+            const colorDarkVal = document.getElementById('color-dark-val');
+            const colorLightVal = document.getElementById('color-light-val');
+            const qrSizeInput = document.getElementById('qr-size');
+            const qrSizeVal = document.getElementById('qr-size-val');
+            const logoInput = document.getElementById('logo-input');
+            const logoFilename = document.getElementById('logo-filename');
+            const clearLogoBtn = document.getElementById('clear-logo-btn');
+            const logoSizeInput = document.getElementById('logo-size');
+            const logoSizeVal = document.getElementById('logo-size-val');
+            const dotStyleSelect = document.getElementById('dot-style');
+            const cornerStyleSelect = document.getElementById('corner-style');
+            const errorCorrectionSelect = document.getElementById('error-correction');
+            const downloadFormatSelect = document.getElementById('download-format');
+            
+            const themeRadios = document.querySelectorAll('input[name="qr-theme"]');
+            const exportArea = document.getElementById('export-area');
+
+            const generateBtn = document.getElementById('generate-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            
+            const qrcodeContainer = document.getElementById('qrcode');
+            const emptyState = document.getElementById('empty-state');
+            const resultContainer = document.getElementById('result-container');
+
+            let qrCodeStyling = null;
+            let uploadedLogoBase64 = null;
+            let debounceTimer = null;
+
+            // UI Label 업데이트
+            qrSizeInput.addEventListener('input', (e) => qrSizeVal.textContent = `${e.target.value}px`);
+            logoSizeInput.addEventListener('input', (e) => logoSizeVal.textContent = `${e.target.value}%`);
+            colorDarkInput.addEventListener('input', (e) => colorDarkVal.textContent = e.target.value);
+            colorLightInput.addEventListener('input', (e) => colorLightVal.textContent = e.target.value);
+
+            // 로고 업로드 이벤트
+            logoInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    logoFilename.textContent = file.name;
+                    clearLogoBtn.classList.remove('hidden');
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        uploadedLogoBase64 = event.target.result;
+                        updateIfContentExists();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // 로고 지우기 이벤트
+            clearLogoBtn.addEventListener('click', () => {
+                logoInput.value = '';
+                logoFilename.textContent = '이미지 선택 안됨';
+                clearLogoBtn.classList.add('hidden');
+                uploadedLogoBase64 = null;
+                updateIfContentExists();
+            });
+
+            // 테마 변경 이벤트
+            themeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    exportArea.className = '';
+                    exportArea.classList.add(e.target.value);
+                    exportArea.dataset.currentTheme = e.target.value;
+                });
+            });
+
+            // 실시간 반영 트리거
+            function updateIfContentExists() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const text = contentInput.value.trim();
+                    if (text) {
+                        generateQRCode(false);
+                    } else {
+                        resultContainer.style.opacity = '0';
+                        resultContainer.style.pointerEvents = 'none';
+                        setTimeout(() => {
+                            emptyState.style.display = 'flex';
+                            emptyState.style.opacity = '1';
+                        }, 300);
+                    }
+                }, 150);
+            }
+
+            // 실시간 이벤트 리스너 연결
+            const realtimeInputs = [
+                contentInput, colorDarkInput, colorLightInput, 
+                qrSizeInput, logoSizeInput, dotStyleSelect, 
+                cornerStyleSelect, errorCorrectionSelect
+            ];
+            realtimeInputs.forEach(input => {
+                input.addEventListener('input', updateIfContentExists);
+                input.addEventListener('change', updateIfContentExists);
+            });
+
+            // 수동 버튼
+            generateBtn.addEventListener('click', () => generateQRCode(true));
+
+            function generateQRCode(isManualClick = false) {
+                const text = contentInput.value.trim();
+                
+                if (!text) {
+                    if (isManualClick) {
+                        showToast('QR 코드로 변환할 내용을 입력해주세요.', 'error');
+                        contentInput.focus();
+                    }
+                    return;
+                }
+
+                qrcodeContainer.innerHTML = '';
+                
+                const colorDark = colorDarkInput.value;
+                const colorLight = colorLightInput.value;
+                const size = parseInt(qrSizeInput.value, 10);
+                const dotStyle = dotStyleSelect.value;
+                const cornerStyle = cornerStyleSelect.value;
+                const correctLevel = errorCorrectionSelect.value;
+                const logoSize = parseInt(logoSizeInput.value, 10) / 100;
+
+                const options = {
+                    width: size,
+                    height: size,
+                    type: "canvas",
+                    data: text,
+                    image: uploadedLogoBase64 || "",
+                    dotsOptions: { color: colorDark, type: dotStyle },
+                    backgroundOptions: { color: colorLight },
+                    imageOptions: {
+                        crossOrigin: "anonymous",
+                        margin: size * 0.05,
+                        imageSize: logoSize
+                    },
+                    cornersSquareOptions: { color: colorDark, type: cornerStyle },
+                    qrOptions: { errorCorrectionLevel: correctLevel }
+                };
+
+                try {
+                    qrCodeStyling = new QRCodeStyling(options);
+                    qrCodeStyling.append(qrcodeContainer);
+                    
+                    const canvas = qrcodeContainer.querySelector('canvas');
+                    if (canvas) {
+                        canvas.style.maxWidth = '100%';
+                        canvas.style.height = 'auto';
+                        qrcodeContainer.style.minHeight = 'auto';
+                    }
+                    
+                    emptyState.style.opacity = '0';
+                    setTimeout(() => {
+                        emptyState.style.display = 'none';
+                        resultContainer.style.opacity = '1';
+                        resultContainer.style.pointerEvents = 'auto';
+                    }, 300);
+
+                    if (isManualClick) showToast('QR 코드가 업데이트 되었습니다.', 'success');
+
+                } catch (error) {
+                    console.error("QR Code generation failed:", error);
+                    if (isManualClick) showToast('QR 코드 생성 중 오류가 발생했습니다.', 'error');
+                }
+            }
+
+            downloadBtn.addEventListener('click', async () => {
+                if (!qrCodeStyling) {
+                    showToast('먼저 QR 코드를 생성해주세요.', 'error');
+                    return;
+                }
+                
+                const extension = downloadFormatSelect.value;
+                const currentTheme = exportArea.dataset.currentTheme || 'theme-none';
+                const filename = `qrcode_theme_${new Date().getTime()}`;
+
+                const originalBtnHTML = downloadBtn.innerHTML;
+                downloadBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> 저장 중...';
+                downloadBtn.disabled = true;
+
+                try {
+                    if (currentTheme !== 'theme-none' && extension !== 'svg') {
+                        const canvas = await html2canvas(exportArea, {
+                            scale: 3,
+                            useCORS: true,
+                            backgroundColor: null
+                        });
+                        
+                        const link = document.createElement('a');
+                        link.download = `${filename}.${extension}`;
+                        link.href = canvas.toDataURL(`image/${extension === 'jpg' ? 'jpeg' : extension}`);
+                        link.click();
+                    } else {
+                        qrCodeStyling.download({ extension: extension, name: filename });
+                    }
+                    showToast(`이미지가 저장되었습니다. (${extension.toUpperCase()})`, 'success');
+                } catch (err) {
+                    console.error("Download Error", err);
+                    showToast('다운로드 처리 중 오류가 발생했습니다.', 'error');
+                } finally {
+                    downloadBtn.innerHTML = originalBtnHTML;
+                    downloadBtn.disabled = false;
+                }
+            });
+
+            // 모달 제어
+            const fallbackModal = document.getElementById('fallback-modal');
+            const fallbackImage = document.getElementById('fallback-image');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const fallbackModalContent = document.getElementById('fallback-modal-content');
+
+            function openModal(dataUrl) {
+                fallbackImage.src = dataUrl;
+                fallbackModal.classList.remove('hidden');
+                fallbackModal.classList.add('flex');
+                requestAnimationFrame(() => {
+                    fallbackModal.classList.remove('opacity-0');
+                    fallbackModalContent.classList.remove('scale-95');
+                });
+            }
+
+            function closeModal() {
+                fallbackModal.classList.add('opacity-0');
+                fallbackModalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    fallbackModal.classList.add('hidden');
+                    fallbackModal.classList.remove('flex');
+                    fallbackImage.src = '';
+                }, 300);
+            }
+
+            closeModalBtn.addEventListener('click', closeModal);
+            fallbackModal.addEventListener('click', (e) => {
+                if (e.target === fallbackModal) closeModal();
+            });
+
+            copyBtn.addEventListener('click', async () => {
+                if (!qrCodeStyling) {
+                    showToast('먼저 내용을 입력하여 QR 코드를 생성해주세요.', 'error');
+                    return;
+                }
+
+                const currentTheme = exportArea.dataset.currentTheme || 'theme-none';
+                const originalBtnHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i> 복사 중...';
+                copyBtn.disabled = true;
+
+                try {
+                    let canvasToCopy;
+                    
+                    if (currentTheme === 'theme-none') {
+                        canvasToCopy = qrcodeContainer.querySelector('canvas');
+                    } else {
+                        canvasToCopy = await html2canvas(exportArea, {
+                            scale: 3,
+                            useCORS: true,
+                            backgroundColor: null
+                        });
+                    }
+
+                    if (!canvasToCopy) throw new Error("캔버스를 찾을 수 없습니다.");
+
+                    const dataUrl = canvasToCopy.toDataURL('image/png');
+
+                    canvasToCopy.toBlob(async (blob) => {
+                        try {
+                            const item = new ClipboardItem({ 'image/png': blob });
+                            await navigator.clipboard.write([item]);
+                            showToast('이미지가 복사되었습니다! (Ctrl+V 로 붙여넣기)', 'success');
+                        } catch (err) {
+                            console.warn('Clipboard API 막힘, Fallback UI 실행:', err);
+                            openModal(dataUrl);
+                        } finally {
+                            copyBtn.innerHTML = originalBtnHTML;
+                            copyBtn.disabled = false;
+                        }
+                    }, 'image/png');
+
+                } catch (error) {
+                    console.error("Copy Error:", error);
+                    showToast('이미지 생성 중 오류가 발생했습니다.', 'error');
+                    copyBtn.innerHTML = originalBtnHTML;
+                    copyBtn.disabled = false;
+                }
+            });
+
+            function showToast(message, type = 'info') {
+                const existingToast = document.getElementById('toast-message');
+                if (existingToast) existingToast.remove();
+
+                const toast = document.createElement('div');
+                toast.id = 'toast-message';
+                
+                let bgColor = type === 'error' ? 'bg-red-600' : type === 'success' ? 'bg-emerald-600' : 'bg-gray-800';
+                let icon = type === 'error' ? 'warning-circle' : type === 'success' ? 'check-circle' : 'info';
+
+                toast.className = `fixed bottom-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 z-50 transition-all duration-300 translate-y-10 opacity-0`;
+                toast.innerHTML = `<i class="ph-bold ph-${icon} text-lg"></i> <span class="text-sm font-medium">${message}</span>`;
+                
+                document.body.appendChild(toast);
+                requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-y-10', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+        });
     </script>
 </body>
 </html>
